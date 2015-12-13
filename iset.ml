@@ -60,7 +60,7 @@ let bal l x y r =
 
 let rec addOneRight a t = (*Znajduje przedział ktorego koniec == a*) 
   match t with            (*i usuwa go z drzewa*)
-  | Empty -> (Empty, a)   (*Przedzialu nie znaleziono*)
+  | Empty -> (Empty, (a + 1))   (*Przedzialu nie znaleziono*)
   | Node(l, x, y, r, _, _) -> (*Zakladamy y <= a rowniez dla kazdego*)
     if y = a                  (*przedzialu w poddrzewach*) 
       then (l, x)
@@ -70,7 +70,7 @@ let rec addOneRight a t = (*Znajduje przedział ktorego koniec == a*)
 
 let rec addOneLeft b t = (*Znajduje przedzial ktorego poczatek == b*)
   match t with           (*i usuwa go z drzewa*)
-  | Empty -> (Empty, b)  (*Przedzialu nie znaleziono*)
+  | Empty -> (Empty, (b - 1))  (*Przedzialu nie znaleziono*)
   | Node(l, x, y, r, _, _) -> (*Zakladamy b <= x rowniez dla kazdego*)
     if x = b                  (*przedzialu w poddrzewach*)
       then (r, y)
@@ -136,13 +136,13 @@ let merge t1 t2 =
     let (x, y) = minElt t2 in
     bal t1 x y (removeMinElt t2)
 
-let remove x y t =
+let remove (x, y) t =
   let (l, _, _) = split x t in
   let (_, _, r) = split y t in
     merge l r
 
-let add a b t =
-  let t = remove a b t in
+let add (a, b) t =
+  let t = remove (a, b) t in
     addOne a b t
 
 let rec mem v = function
@@ -157,13 +157,13 @@ let rec mem v = function
 let rec iter f = function
   | Empty -> ()
   | Node(l, x, y, r, _, _) ->
-      iter f l; f x y;iter f r
+      iter f l; f (x, y);iter f r
 
 let rec fold f t a =
   match t with
   | Empty -> a
   | Node(l, x, y, r, _, _) ->
-    fold f r (f x y (fold f l a))
+    fold f r (f (x, y) (fold f l a))
 
 let elements t =
   let rec loop t a =   
@@ -181,4 +181,3 @@ let below v t =
         then loop r (addNumber acc n)
         else loop l (addNumber acc (len x v)) 
   in loop t 0
-

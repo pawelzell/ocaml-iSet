@@ -4,7 +4,7 @@
 
 (*Reprezentacja: Node(l, x, y, r, h, n)
   [x, y] - przedzial (x <= y), h - wysokosc
-  n - liczba elementow mniejszych od y w drzewie 
+  n - liczba elementow mniejszych od y w drzewie  
   l, r - odpowiedznio lewe, prawe drzewo*)
 
 type t = Empty | Node of t * int * int * t * int * int  
@@ -21,14 +21,9 @@ let size = function
   | Empty -> 0
   | Node(_, _, _, _, _, n) -> n
 
-let addNumber a b = (*Zwraca min max_int (a+b) (a >= 0 b >= 0*)
-  if a <= a + b then a + b else max_int 
-
-let len x y = max (y - x + 1) 0
-
 let make l x y r =
-    Node(l, x, y, r, max (height l) (height r) + 1, 
-    addNumber (size l) (len x y))
+  Node(l, x, y, r, max (height l) (height r) + 1, 
+  size l + y - x + 1)
 
 let bal l x y r =
   let hl = height l in
@@ -56,27 +51,26 @@ let bal l x y r =
           | Empty -> assert false)
     | Empty -> assert false
   else Node(l, x, y, r, max hl hr + 1,
-    addNumber (size l) (len x y))
+    size l + y - x + 1)
 
-let rec addOneRight a t = (*Znajduje przedział ktorego koniec == a*) 
+let rec addOneRight a t = (*Znajduje przedział ktorego koniec  = a*) 
   match t with            (*i usuwa go z drzewa*)
   | Empty -> (Empty, (a + 1))   (*Przedzialu nie znaleziono*)
-  | Node(l, x, y, r, _, _) -> (*Zakladamy y <= a rowniez dla kazdego*)
+  | Node(l, x, y, r, _, _) -> (*Zakladamy y <= a dla kazdego*)
     if y = a                  (*przedzialu w poddrzewach*) 
       then (l, x)
       else
         let rt, lend = addOneRight a r in
-        (bal l x y rt, lend)
+          (bal l x y rt, lend)
 
-let rec addOneLeft b t = (*Znajduje przedzial ktorego poczatek == b*)
+let rec addOneLeft b t = (*Znajduje przedzial ktorego poczatek = b*)
   match t with           (*i usuwa go z drzewa*)
   | Empty -> (Empty, (b - 1))  (*Przedzialu nie znaleziono*)
-  | Node(l, x, y, r, _, _) -> (*Zakladamy b <= x rowniez dla kazdego*)
+  | Node(l, x, y, r, _, _) -> (*Zakladamy b <= x dla kazdego*)
     if x = b                  (*przedzialu w poddrzewach*)
       then (r, y)
       else
-        let lt, rend = addOneLeft b r
-        in
+        let lt, rend = addOneLeft b r in
           (bal l x y lt, rend)
 
 let rec addOne a b t = (*Zakladamy ze zostalo wykonane remove x y*) 
@@ -100,22 +94,30 @@ let rec join l a b r =
   | (Empty, _) -> addOne a b r
   | (_, Empty) -> addOne a b l
   | (Node(ll, lx, ly, lr, lh, _), Node(rl, rx, ry, rr, rh, _)) ->
-    if lh > rh + 2 then bal ll lx ly (join lr a b r) else
-    if rh > lh + 2 then bal (join l a b rl) rx ry rr else
-    make l a b r
+    if lh > rh + 2 
+      then bal ll lx ly (join lr a b r) 
+      else
+        if rh > lh + 2 
+          then bal (join l a b rl) rx ry rr 
+          else make l a b r
 
 let split v t =
   let rec loop = function
     | Empty ->
       (Empty, false, Empty)
     | Node (l, x, y, r, _, _) ->
-      if v < x then
-        let (ll, pres, rl) = loop l in (ll, pres, join rl x y r) else
-      if y < v then
-        let (lr, pres, rr) = loop r in (join l x y lr, pres, rr) else  
-      let l = if x < v then addOne x (v - 1) l else l in
-      let r = if y > v then addOne (v + 1) y r else r in 
-        (l, true, r)      
+      if v < x 
+        then
+          let (ll, pres, rl) = loop l in 
+            (ll, pres, join rl x y r) 
+        else if y < v 
+          then
+            let (lr, pres, rr) = loop r in 
+              (join l x y lr, pres, rr) 
+          else  
+            let l = if x < v then addOne x (v - 1) l else l in
+            let r = if y > v then addOne (v + 1) y r else r in 
+              (l, true, r)      
   in loop t
 
 let rec minElt = function
@@ -148,16 +150,16 @@ let add (a, b) t =
 let rec mem v = function
   | Empty -> false
   | Node(l, x, y, r, _, _) ->
-      if x <= v && v <= y 
-        then true
-        else if v < x 
-          then mem v l
-          else mem v r
+    if x <= v && v <= y 
+      then true
+      else if v < x 
+        then mem v l
+        else mem v r
 
 let rec iter f = function
   | Empty -> ()
-  | Node(l, x, y, r, _, _) ->
-      iter f l; f (x, y);iter f r
+  | Node (l, x, y, r, _, _) ->
+    iter f l; f (x, y); iter f r
 
 let rec fold f t a =
   match t with
@@ -178,6 +180,12 @@ let below v t =
     | Empty -> acc
     | Node(l, x, y, r, _, n) ->
       if v > y
-        then loop r (addNumber acc n)
-        else loop l (addNumber acc (len x v)) 
-  in loop t 0
+        then loop r (acc + n)
+        else if x <= v
+          then loop l (acc + v - x + 1) 
+          else loop l acc  
+  in 
+    let n = loop t 0 in
+    if n < 0 
+      then max_int
+      else n

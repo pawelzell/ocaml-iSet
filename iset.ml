@@ -4,8 +4,7 @@
 
 (*Reprezentacja: Node(l, (x, y), r, h, n)
   [x, y] - przedzial (x <= y), h - wysokosc
-  n - liczba elementow w drzewie jesli jest ona
-  mniejsza niz max_int, inaczej n <= 0  
+  n - minimum z liczby elementow w drzewie i max_int
   l, r - odpowiedznio lewe, prawe drzewo*)
 
 type interval = int * int
@@ -13,6 +12,9 @@ type interval = int * int
 type t = Empty | Node of t * interval * t * int * int  
 
 let empty = Empty
+
+let satSum a = (*zmienia liczbe na max_int jesli *) 
+  if a >= 0 then a else max_int  (*przekroczono zakres*)
 
 let is_empty l = l = Empty 
 
@@ -26,7 +28,7 @@ let size = function
 
 let make l ((x, y) as p) r =
   Node(l, p, r, max (height l) (height r) + 1, 
-  size l + size r + y - x + 1)
+  satSum (size l + size r + y - x + 1))
 
 let bal l ((x, y) as p) r =
   let hl = height l in
@@ -54,7 +56,7 @@ let bal l ((x, y) as p) r =
           | Empty -> assert false)
     | Empty -> assert false
   else Node(l, p, r, max hl hr + 1,
-    size l + size r + y - x + 1)
+    satSum (size l + size r + y - x + 1))
 
 let rec addOneRight a t = (*Znajduje przedział ktorego koniec  = a*) 
   match t with            (*i usuwa go z drzewa*)
@@ -183,9 +185,9 @@ let below v t =
     | Empty -> acc
     | Node(l, (x, y), r, _, n) ->
       if v > y
-        then loop r (acc + n - size r)
+        then loop r (satSum (acc + size l + y - x + 1))
         else if x <= v
-          then loop l (acc + v - x + 1) 
+          then loop l (satSum (acc + v - x + 1)) 
           else loop l acc  
   in 
     let n = loop t 0 in

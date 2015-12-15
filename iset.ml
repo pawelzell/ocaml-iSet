@@ -4,7 +4,8 @@
 
 (*Reprezentacja: Node(l, (x, y), r, h, n)
   [x, y] - przedzial (x <= y), h - wysokosc
-  n - liczba elementow w drzewie  
+  n - liczba elementow w drzewie jesli jest ona
+  mniejsza niz max_int, inaczej n <= 0  
   l, r - odpowiedznio lewe, prawe drzewo*)
 
 type interval = int * int
